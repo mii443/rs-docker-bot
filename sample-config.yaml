@@ -1,0 +1,180 @@
+token: TOKEN
+prefix: PREFIX
+languages:
+- name: Ruby
+  code:
+  - Ruby
+  - ruby
+  - rb
+  extension: rb
+  path: "{file}"
+  run_command: "ruby ./{file}"
+  image: ruby
+
+- name: Python
+  code:
+  - Python
+  - python
+  - py
+  extension: py
+  path: "{file}"
+  run_command: "python ./{file}"
+  image: "python:3"
+
+- name: JavaScript
+  code:
+  - JavaScript
+  - javascript
+  - js
+  extension: js
+  path: "{file}"
+  run_command: "node ./{file}"
+  image: node
+
+- name: "C++"
+  code:
+  - cpp
+  - c++
+  - c
+  extension: cpp
+  path: "{file}"
+  compile_command: "gcc {file} -o program"
+  run_command: "./program"
+  image: gcc
+
+- name: Java
+  code:
+  - java
+  extension: java
+  path: "Main.java"
+  compile_command: "javac Main.java"
+  run_command: "java Main"
+  image: "openjdk:7"
+
+- name: Kotlin
+  code:
+  - Kotlin
+  - kt
+  extension: kt
+  path: "Main.kt"
+  compile_command: "kotlinc Main.kt"
+  run_command: "kotlin MainKt"
+  image: "zenika/kotlin:latest"
+
+- name: Julia
+  code:
+  - julia
+  - jl
+  extension: jl
+  path: "{file}"
+  run_command: "julia ./{file}"
+  image: julia
+
+- name: Rust
+  code:
+  - rust
+  - rs
+  extension: rs
+  path: "{file}"
+  compile_command: "rustc {file} -o program"
+  run_command: "./program"
+  image: rust
+
+- name: PHP
+  code:
+  - php
+  extension: php
+  path: "{file}"
+  run_command: "php ./{file}"
+  image: "php:7.4-cli"
+
+- name: Go
+  code:
+  - go
+  extension: go
+  path: "{file}"
+  run_command: "go run ./{file}"
+  image: golang
+
+- name: GP
+  code:
+  - gp
+  - pari
+  extension: gp
+  path: "{file}"
+  run_command: "gp -q ./{file}"
+  image: "pascalmolin/parigp-full"
+
+- name: Bash
+  code:
+  - bash
+  - sh
+  extension: sh
+  path: "{file}"
+  run_command: "bash ./{file}"
+  image: ubuntu
+
+- name: Maxima
+  code:
+  - maxima
+  - mc
+  - mac
+  extension: mac
+  path: "{file}"
+  run_command: "maxima --very-quiet ./{file}"
+  image: "jgoldfar/maxima-docker:debian-latest"
+
+- name: なでしこ
+  code:
+  - nadesiko
+  - nako
+  extension: nako3
+  path: "{file}"
+  run_command: "nadesiko /{file}"
+  image: "esolang/nadesiko"
+
+- name: Fortran
+  code:
+  - fortran
+  extension: f
+  path: "{file}"
+  compile_command: "gfortran -o program /{file}"
+  run_command: "./program"
+  image: "nacyot/fortran-gfortran:apt"
+
+- name: R
+  code:
+  - R
+  - r
+  extension: R
+  path: "{file}"
+  run_command: "Rscript {file}"
+  image: "r-base"
+
+- name: "x86 ASM NASM"
+  code:
+  - x86
+  - asm
+  - x86asm
+  extension: "x86.asm"
+  path: "{file}"
+  run_command: "x86asm-nasm /{file}"
+  image: "esolang/x86asm-nasm"
+
+- name: Elixir
+  code:
+  - elixir
+  - exs
+  extension: exs
+  path: "{file}"
+  run_command: "elixir /{file}"
+  image: "esolang/elixir"
+
+- name: Haskell
+  code:
+  - haskell
+  - hs
+  extension: hs
+  path: "{file}"
+  run_command: "haskell /{file}"
+  image: "esolang/haskell"
