@@ -1,4 +1,5 @@
 use std::{
+    io::Write,
     sync::{Arc, Mutex},
     time::Duration,
 };
@@ -9,11 +10,11 @@ use regex::Regex;
 use serenity::{
     async_trait,
     builder::{
-        CreateApplicationCommand, CreateApplicationCommandOption, CreateInteractionResponse,
-        CreateInteractionResponseMessage, EditMessage,
+        CreateApplicationCommand, CreateApplicationCommandOption, CreateAttachment,
+        CreateInteractionResponse, CreateInteractionResponseMessage, EditMessage,
     },
     model::prelude::{
-        command::{CommandOptionType, CommandType, Command},
+        command::{Command, CommandOptionType, CommandType},
         Interaction, Message, Ready,
     },
     prelude::{Context, EventHandler},
@@ -40,7 +41,10 @@ impl EventHandler for Handler {
 
             let config = {
                 let data_read = context.data.read().await;
-                data_read.get::<ConfigStorage>().expect("Cannot get ConfigStorage.").clone()
+                data_read
+                    .get::<ConfigStorage>()
+                    .expect("Cannot get ConfigStorage.")
+                    .clone()
             };
 
             let language = {
@@ -50,7 +54,10 @@ impl EventHandler for Handler {
 
             if let Some(language) = language {
                 let mut message = message
-                    .reply(&context.http, format!("Creating {:?} container.", language.name))
+                    .reply(
+                        &context.http,
+                        format!("Creating {} container.", language.name),
+                    )
                     .await
                     .unwrap();
 
@@ -67,10 +74,14 @@ impl EventHandler for Handler {
 
                 container.upload_file(code, file_name.clone()).await;
 
+                let compile_buf = Arc::new(Mutex::new(String::default()));
+                let b = Arc::clone(&compile_buf);
+
                 if let Some((compile_handle, compile_rx)) = container.compile().await {
                     let rx_handle = tokio::spawn(async move {
                         while let Ok(Some(msg)) = compile_rx.recv() {
                             print!("{}", msg);
+                            *b.lock().unwrap() += &msg.to_string();
                         }
                     });
 
@@ -88,23 +99,80 @@ impl EventHandler for Handler {
                     }
                 });
 
+                let timeout = Arc::new(Mutex::new(false));
+                let t = Arc::clone(&timeout);
                 tokio::spawn(async move {
                     sleep_until(Instant::now() + Duration::from_secs(10)).await;
                     end_tx.send(()).unwrap();
+                    *t.lock().unwrap() = true;
                 });
 
                 let (_, _) = tokio::join!(run_handle, rx_handle);
 
-                message
-                    .edit(
-                        &context.http,
-                        EditMessage::new().content(format!(
-                            "Result\n```{}\n```",
-                            buf.lock().unwrap().replace("@", "\\@")
-                        )),
+                let mut edit_message = EditMessage::new();
+                let mut content = if *timeout.lock().unwrap() {
+                    "Timeout".to_string()
+                } else if compile_buf.lock().unwrap().is_empty() {
+                    format!(
+                        "Result\n```\n{}\n```",
+                        buf.lock().unwrap().replace("@", "\\@")
                     )
-                    .await
-                    .unwrap();
+                } else {
+                    format!(
+                        "Result\nCompilation log\n```\n{}\n```\nExecution log\n```{}\n```",
+                        compile_buf.lock().unwrap().replace("@", "\\@"),
+                        buf.lock().unwrap().replace("@", "\\@")
+                    )
+                };
+
+                if content.len() >= 1000 {
+                    content = "Result log out of length.".to_string();
+                    {
+                        let mut result_log =
+                            std::fs::File::create(format!("./log/result-{}.txt", container.name))
+                                .unwrap();
+                        result_log
+                            .write_all(buf.lock().unwrap().as_bytes())
+                            .unwrap();
+                        result_log.flush().unwrap();
+                    }
+                    let result_log =
+                        tokio::fs::File::open(format!("./log/result-{}.txt", container.name))
+                            .await
+                            .unwrap();
+                    edit_message = edit_message.attachment(
+                        CreateAttachment::file(&result_log, "result_log.txt")
+                            .await
+                            .unwrap(),
+                    );
+
+                    if !((*compile_buf.lock().unwrap()).is_empty()) {
+                        {
+                            let mut compile_log = std::fs::File::create(format!(
+                                "./log/compile-{}.txt",
+                                container.name
+                            ))
+                            .unwrap();
+                            compile_log
+                                .write_all(compile_buf.lock().unwrap().as_bytes())
+                                .unwrap();
+                            compile_log.flush().unwrap();
+                        }
+                        let result_log =
+                            tokio::fs::File::open(format!("./log/compile-{}.txt", container.name))
+                                .await
+                                .unwrap();
+                        edit_message = edit_message.attachment(
+                            CreateAttachment::file(&result_log, "compile_log.txt")
+                                .await
+                                .unwrap(),
+                        );
+                    }
+                }
+
+                edit_message = edit_message.content(content);
+
+                message.edit(&context.http, edit_message).await.unwrap();
 
                 container.stop().await;
             }
@@ -137,6 +205,8 @@ impl EventHandler for Handler {
                         .await
                         .unwrap();
                 }
+
+                if command_interaction.data.options()[0].name == "help" {}
             }
         }
     }
@@ -157,6 +227,8 @@ impl EventHandler for Handler {
                 "docker help command",
             ));
 
-        Command::create_global_application_command(&context.http, docker_command).await.unwrap();
+        Command::create_global_application_command(&context.http, docker_command)
+            .await
+            .unwrap();
     }
 }

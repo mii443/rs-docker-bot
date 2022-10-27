@@ -2,3 +2,4 @@
 /code
 config.yaml
 Cargo.lock
+*.swp
