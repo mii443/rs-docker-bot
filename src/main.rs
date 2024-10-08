@@ -3,10 +3,9 @@ mod docker;
 mod event_handler;
 mod language;
 
-use std::{env, fs::File, io::Read, sync::Arc};
+use std::{collections::HashSet, env, fs::File, io::Read, sync::Arc};
 
 use config::Config;
-use event_handler::Handler;
 
 use poise::{
     serenity_prelude::{self as serenity, futures::lock::Mutex, UserId},
@@ -17,7 +16,7 @@ type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
 
 pub struct Data {
-    pub context: Arc<Mutex<Config>>,
+    pub config: Arc<Mutex<Config>>,
 }
 
 fn load_config() -> Option<Config> {
@@ -43,40 +42,33 @@ async fn main() -> Result<(), ()> {
 
     let config = load_config().unwrap();
 
-    let token = &config.token;
-    let http = Http::new(token);
+    let intents =
+        serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::MESSAGE_CONTENT;
 
-    let bot_id = match http.get_current_user().await {
-        Ok(bot_id) => bot_id.id,
-        Err(why) => panic!("Could not access the bot id: {:?}", why),
-    };
+    let framework = poise::Framework::builder()
+        .setup(move |_ctx, _ready, _framework| {
+            Box::pin(async move {
+                Ok(Data {
+                    config: Arc::new(Mutex::new(config.clone())),
+                })
+            })
+        })
+        .options(poise::FrameworkOptions {
+            commands: vec![],
+            prefix_options: PrefixFrameworkOptions {
+                prefix: Some(config.prefix),
+                ..Default::default()
+            },
+            owners: HashSet::from([UserId::new(config.owner)]),
+            ..Default::default()
+        })
+        .build();
 
-    let framework = StandardFramework::new();
-    framework.configure(|c| {
-        c.with_whitespace(true)
-            .on_mention(Some(bot_id))
-            .prefix(config.prefix.clone())
-    });
+    let client = serenity::ClientBuilder::new(config.token, intents)
+        .framework(framework)
+        .await;
 
-    let mut client = Client::builder(
-        &token,
-        GatewayIntents::MESSAGE_CONTENT
-            | GatewayIntents::GUILD_MESSAGES
-            | GatewayIntents::DIRECT_MESSAGES,
-    )
-    .framework(framework)
-    .event_handler(Handler)
-    .await
-    .expect("Err creating client");
-
-    {
-        let mut data = client.data.write().await;
-        data.insert::<ConfigStorage>(Arc::new(Mutex::new(config)));
-    }
-
-    if let Err(why) = client.start().await {
-        println!("Client error: {:?}", why);
-    }
+    client.unwrap().start().await.unwrap();
 
     Ok(())
 }
