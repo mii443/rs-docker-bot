@@ -3,14 +3,15 @@ mod docker;
 mod event_handler;
 mod language;
 
-use std::{env, fs::File, io::Read, sync::{Arc, Mutex}};
+use std::{
+    env,
+    fs::File,
+    io::Read,
+    sync::{Arc, Mutex},
+};
 
 use config::Config;
 use event_handler::Handler;
-use serenity::{
-    framework::StandardFramework, http::Http,
-    prelude::{GatewayIntents, TypeMapKey}, Client,
-};
 
 struct ConfigStorage;
 
@@ -61,12 +62,12 @@ async fn main() -> Result<(), ()> {
         GatewayIntents::MESSAGE_CONTENT
             | GatewayIntents::GUILD_MESSAGES
             | GatewayIntents::DIRECT_MESSAGES,
-        )
-        .framework(framework)
-        .event_handler(Handler)
-        .await
-        .expect("Err creating client");
-    
+    )
+    .framework(framework)
+    .event_handler(Handler)
+    .await
+    .expect("Err creating client");
+
     {
         let mut data = client.data.write().await;
         data.insert::<ConfigStorage>(Arc::new(Mutex::new(config)));

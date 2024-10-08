@@ -1,5 +1,5 @@
 use bollard::{container::Config, service::HostConfig};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Language {
@@ -9,7 +9,7 @@ pub struct Language {
     pub path: String,
     pub run_command: String,
     pub compile_command: Option<String>,
-    pub image: String
+    pub image: String,
 }
 
 impl Language {

@@ -84,12 +84,7 @@ impl Container {
                     attach_stdout: Some(true),
                     attach_stdin: Some(true),
                     attach_stderr: Some(true),
-                    cmd: Some(
-                        language
-                            .get_run_command(file_name)
-                            .split(" ")
-                            .collect(),
-                    ),
+                    cmd: Some(language.get_run_command(file_name).split(" ").collect()),
                     ..Default::default()
                 },
             )
@@ -188,11 +183,7 @@ impl Container {
             let tar_gz = File::create(&format!("code/{}.tar.gz", file_name)).unwrap();
             let encoder = GzEncoder::new(tar_gz, Compression::default());
             let mut tar = tar::Builder::new(encoder);
-            tar.append_file(
-                path.clone(),
-                &mut f,
-            )
-            .unwrap();
+            tar.append_file(path.clone(), &mut f).unwrap();
             tar.finish().unwrap();
         }
 
