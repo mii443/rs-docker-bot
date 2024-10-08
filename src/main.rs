@@ -3,20 +3,21 @@ mod docker;
 mod event_handler;
 mod language;
 
-use std::{
-    env,
-    fs::File,
-    io::Read,
-    sync::{Arc, Mutex},
-};
+use std::{env, fs::File, io::Read, sync::Arc};
 
 use config::Config;
 use event_handler::Handler;
 
-struct ConfigStorage;
+use poise::{
+    serenity_prelude::{self as serenity, futures::lock::Mutex, UserId},
+    PrefixFrameworkOptions,
+};
 
-impl TypeMapKey for ConfigStorage {
-    type Value = Arc<Mutex<Config>>;
+type Error = Box<dyn std::error::Error + Send + Sync>;
+type Context<'a> = poise::Context<'a, Data, Error>;
+
+pub struct Data {
+    pub context: Arc<Mutex<Config>>,
 }
 
 fn load_config() -> Option<Config> {
