@@ -7,24 +7,9 @@ use std::{
 use log::info;
 
 use regex::Regex;
-use serenity::{
-    async_trait,
-    builder::{
-        CreateApplicationCommand, CreateApplicationCommandOption, CreateAttachment,
-        CreateInteractionResponse, CreateInteractionResponseMessage, EditMessage,
-    },
-    model::prelude::{
-        command::{Command, CommandOptionType, CommandType},
-        Interaction, Message, Ready,
-    },
-    prelude::{Context, EventHandler},
-};
 use tokio::time::{sleep_until, Instant};
 
-use crate::{
-    docker::{docker_ps, Container},
-    ConfigStorage,
-};
+use crate::docker::{docker_ps, Container};
 
 pub struct Handler;
 
