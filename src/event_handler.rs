@@ -1,18 +1,12 @@
 use std::{
-    io::Write,
     sync::{Arc, Mutex},
     time::Duration,
 };
 
-use log::info;
-
 use regex::Regex;
 use tokio::time::{sleep_until, Instant};
 
-use crate::{
-    docker::{docker_ps, Container},
-    Data, Error,
-};
+use crate::{docker::Container, Data, Error};
 
 use poise::serenity_prelude::{self as serenity, CreateAttachment, EditMessage, Message};
 
@@ -144,61 +138,3 @@ async fn on_message(ctx: &serenity::Context, data: &Data, message: &Message) {
         }
     }
 }
-/*
-pub struct Handler;
-
-#[async_trait]
-impl EventHandler for Handler {
-    async fn interaction_create(&self, context: Context, interaction: Interaction) {
-        if let Interaction::ApplicationCommand(command_interaction) = interaction.clone() {
-            if command_interaction.data.name == "docker" {
-                if command_interaction.data.options()[0].name == "ps" {
-                    let list = docker_ps().await;
-
-                    let list: Vec<String> = list
-                        .into_iter()
-                        .filter(|p| p.state.clone().unwrap() == "running")
-                        .map(|f| {
-                            String::from(format!("{} {}", f.names.unwrap()[0], f.image.unwrap()))
-                        })
-                        .collect();
-
-                    let list = list.join("\n");
-
-                    command_interaction
-                        .create_interaction_response(
-                            &context.http,
-                            CreateInteractionResponse::Message(
-                                CreateInteractionResponseMessage::new().content(list),
-                            ),
-                        )
-                        .await
-                        .unwrap();
-                }
-
-                if command_interaction.data.options()[0].name == "help" {}
-            }
-        }
-    }
-
-    async fn ready(&self, context: Context, _: Ready) {
-        info!("Ready.");
-        let docker_command = CreateApplicationCommand::new("docker")
-            .kind(CommandType::ChatInput)
-            .description("docker command")
-            .add_option(CreateApplicationCommandOption::new(
-                CommandOptionType::SubCommand,
-                "ps",
-                "docker ps",
-            ))
-            .add_option(CreateApplicationCommandOption::new(
-                CommandOptionType::SubCommand,
-                "help",
-                "docker help command",
-            ));
-
-        Command::create_global_application_command(&context.http, docker_command)
-            .await
-            .unwrap();
-    }
-}*/

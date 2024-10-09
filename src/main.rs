@@ -14,6 +14,7 @@ use poise::{
 };
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
+#[allow(unused)]
 type Context<'a> = poise::Context<'a, Data, Error>;
 
 pub struct Data {

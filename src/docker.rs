@@ -20,6 +20,7 @@ use tokio::task::JoinHandle;
 
 use crate::language::Language;
 
+#[allow(unused)]
 pub async fn docker_ps() -> Vec<ContainerSummary> {
     let docker = Docker::connect_with_local_defaults().unwrap();
 
