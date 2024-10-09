@@ -9,7 +9,28 @@ use log::info;
 use regex::Regex;
 use tokio::time::{sleep_until, Instant};
 
-use crate::docker::{docker_ps, Container};
+use crate::{
+    docker::{docker_ps, Container},
+    Data, Error,
+};
+
+use poise::serenity_prelude as serenity;
+
+pub async fn event_handler(
+    ctx: &serenity::Context,
+    event: &serenity::FullEvent,
+    _framework: poise::FrameworkContext<'_, Data, Error>,
+    data: &Data,
+) -> Result<(), Error> {
+    match event {
+        serenity::FullEvent::Ready { .. } => {
+            println!("bot ready");
+        }
+
+        _ => {}
+    }
+    Ok(())
+}
 
 pub struct Handler;
 

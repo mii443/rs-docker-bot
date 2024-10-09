@@ -7,6 +7,7 @@ use std::{collections::HashSet, env, fs::File, io::Read, sync::Arc};
 
 use config::Config;
 
+use event_handler::event_handler;
 use poise::{
     serenity_prelude::{self as serenity, futures::lock::Mutex, UserId},
     PrefixFrameworkOptions,
@@ -54,6 +55,9 @@ async fn main() -> Result<(), ()> {
             })
         })
         .options(poise::FrameworkOptions {
+            event_handler: |ctx, event, framework, data| {
+                Box::pin(event_handler(ctx, event, framework, data))
+            },
             commands: vec![],
             prefix_options: PrefixFrameworkOptions {
                 prefix: Some(config.prefix),
