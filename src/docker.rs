@@ -16,6 +16,7 @@ use bollard::{
 };
 use flate2::{write::GzEncoder, Compression};
 use futures_util::StreamExt;
+use tar::Header;
 use tokio::task::JoinHandle;
 
 use crate::language::Language;
@@ -46,7 +47,13 @@ impl Container {
         let name = format!("dockerbot-{}", uuid::Uuid::new_v4().to_string());
 
         let id = docker
-            .create_container(Some(CreateContainerOptions { name: name.clone() }), config)
+            .create_container(
+                Some(CreateContainerOptions {
+                    name: name.clone(),
+                    platform: None,
+                }),
+                config,
+            )
             .await
             .unwrap()
             .id;
@@ -171,28 +178,24 @@ impl Container {
         let docker = Docker::connect_with_local_defaults().unwrap();
         let path = self.language.clone().unwrap().get_path(file_name.clone());
 
-        {
-            let mut f = File::create(&format!("code/{}", path)).unwrap();
-            f.write_all(content.as_bytes()).unwrap();
-            f.flush().unwrap();
-            f.sync_all().unwrap();
-        }
-
-        {
-            let mut f = File::open(&format!("code/{}", path)).unwrap();
-
-            let tar_gz = File::create(&format!("code/{}.tar.gz", file_name)).unwrap();
-            let encoder = GzEncoder::new(tar_gz, Compression::default());
+        let code = {
+            let encoder = GzEncoder::new(vec![], Compression::default());
             let mut tar = tar::Builder::new(encoder);
-            tar.append_file(path.clone(), &mut f).unwrap();
+
+            let mut header = Header::new_gnu();
+            header.set_path(&path).unwrap();
+            header.set_size(content.as_bytes().len() as u64);
+            header.set_cksum();
+
+            tar.append(&header, content.as_bytes()).unwrap();
+
             tar.finish().unwrap();
-        }
+
+            let encoder = tar.into_inner().unwrap();
+            encoder.finish().unwrap()
+        };
 
         {
-            let mut f = File::open(&format!("code/{}.tar.gz", file_name)).unwrap();
-            let mut contents = Vec::new();
-            f.read_to_end(&mut contents).unwrap();
-
             docker
                 .start_container::<String>(&self.id, None)
                 .await
@@ -205,7 +208,7 @@ impl Container {
                         path: "/",
                         ..Default::default()
                     }),
-                    contents.into(),
+                    code.into(),
                 )
                 .await
                 .unwrap();
