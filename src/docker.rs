@@ -1,12 +1,14 @@
+use core::slice::SlicePattern;
 use std::{
+    io::Read,
     sync::mpsc::{self, Receiver, Sender},
     time::Duration,
 };
 
 use bollard::{
     container::{
-        CreateContainerOptions, ListContainersOptions, LogOutput, RemoveContainerOptions,
-        UploadToContainerOptions,
+        CreateContainerOptions, DownloadFromContainerOptions, ListContainersOptions, LogOutput,
+        RemoveContainerOptions, UploadToContainerOptions,
     },
     exec::{CreateExecOptions, StartExecResults},
     service::ContainerSummary,
@@ -170,6 +172,18 @@ impl Container {
             return Some((handle, rx));
         }
         return None;
+    }
+
+    pub async fn download_file(&self, path: &str) -> Vec<u8> {
+        let docker = Docker::connect_with_local_defaults().unwrap();
+        let options = Some(DownloadFromContainerOptions { path });
+        let mut download = docker.download_from_container(&self.id, options);
+        let mut result: Vec<u8> = vec![];
+        while let Some(Ok(d)) = download.next().await {
+            result.append(&mut d.into());
+        }
+
+        result
     }
 
     pub async fn upload_file(&self, content: &str, file_name: String) {
