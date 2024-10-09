@@ -38,7 +38,7 @@ fn load_config() -> Option<Config> {
 
 #[tokio::main]
 async fn main() -> Result<(), ()> {
-    env::set_var("RUST_LOG", "info");
+    env::set_var("RUST_LOG", "error");
     env_logger::init();
 
     let config = load_config().unwrap();
@@ -47,12 +47,15 @@ async fn main() -> Result<(), ()> {
         serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::MESSAGE_CONTENT;
 
     let framework = poise::Framework::builder()
-        .setup(move |_ctx, _ready, _framework| {
-            Box::pin(async move {
-                Ok(Data {
-                    config: Arc::new(Mutex::new(config.clone())),
+        .setup({
+            let config = config.clone();
+            move |_ctx, _ready, _framework| {
+                Box::pin(async move {
+                    Ok(Data {
+                        config: Arc::new(Mutex::new(config)),
+                    })
                 })
-            })
+            }
         })
         .options(poise::FrameworkOptions {
             event_handler: |ctx, event, framework, data| {
