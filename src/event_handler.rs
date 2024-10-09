@@ -32,7 +32,7 @@ pub async fn event_handler(
 }
 
 async fn on_message(ctx: &serenity::Context, data: &Data, message: &Message) {
-    let regex = Regex::new("^```(?P<language>[0-9a-zA-Z]*)\n(?P<code>(\n|.)+)\n```$").unwrap();
+    let regex = Regex::new("^(?P<codeblock>```(?:(?P<language>[^\n]*)\n)?(?P<code>[\\s\\S]+?)\n```)(?:\\s*(?P<paths>(?:(?:/|\\.\\.?/)?(?:[^/\\s]+/)*[^/\\s]+\\s*)+))?$").unwrap();
 
     let capture = regex.captures(&message.content);
 
@@ -69,7 +69,6 @@ async fn on_message(ctx: &serenity::Context, data: &Data, message: &Message) {
             if let Some((compile_handle, compile_rx)) = container.compile().await {
                 let rx_handle = tokio::spawn(async move {
                     while let Ok(Some(msg)) = compile_rx.recv() {
-                        print!("{}", msg);
                         *b.lock().unwrap() += &msg.to_string();
                     }
                 });
@@ -83,7 +82,6 @@ async fn on_message(ctx: &serenity::Context, data: &Data, message: &Message) {
             let b = Arc::clone(&buf);
             let rx_handle = tokio::spawn(async move {
                 while let Ok(Some(msg)) = run_code_rx.recv() {
-                    print!("{}", msg);
                     *b.lock().unwrap() += &msg.to_string();
                 }
             });
@@ -92,8 +90,9 @@ async fn on_message(ctx: &serenity::Context, data: &Data, message: &Message) {
             let t = Arc::clone(&timeout);
             tokio::spawn(async move {
                 sleep_until(Instant::now() + Duration::from_secs(10)).await;
-                end_tx.send(()).unwrap();
-                *t.lock().unwrap() = true;
+                if let Ok(_) = end_tx.send(()) {
+                    *t.lock().unwrap() = true;
+                }
             });
 
             let (_, _) = tokio::join!(run_handle, rx_handle);
