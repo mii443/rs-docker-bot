@@ -122,45 +122,17 @@ async fn on_message(ctx: &serenity::Context, data: &Data, message: &Message) {
 
             if content.len() >= 1000 {
                 content = "Result log out of length.".to_string();
-                {
-                    let mut result_log =
-                        std::fs::File::create(format!("./log/result-{}.txt", container.name))
-                            .unwrap();
-                    result_log
-                        .write_all(buf.lock().unwrap().as_bytes())
-                        .unwrap();
-                    result_log.flush().unwrap();
-                }
-                let result_log =
-                    tokio::fs::File::open(format!("./log/result-{}.txt", container.name))
-                        .await
-                        .unwrap();
 
-                edit_message = edit_message.new_attachment(
-                    CreateAttachment::file(&result_log, "result_log.txt")
-                        .await
-                        .unwrap(),
-                );
+                edit_message = edit_message.new_attachment(CreateAttachment::bytes(
+                    buf.lock().unwrap().as_bytes(),
+                    "result_log.txt",
+                ));
 
                 if !((*compile_buf.lock().unwrap()).is_empty()) {
-                    {
-                        let mut compile_log =
-                            std::fs::File::create(format!("./log/compile-{}.txt", container.name))
-                                .unwrap();
-                        compile_log
-                            .write_all(compile_buf.lock().unwrap().as_bytes())
-                            .unwrap();
-                        compile_log.flush().unwrap();
-                    }
-                    let result_log =
-                        tokio::fs::File::open(format!("./log/compile-{}.txt", container.name))
-                            .await
-                            .unwrap();
-                    edit_message = edit_message.new_attachment(
-                        CreateAttachment::file(&result_log, "compile_log.txt")
-                            .await
-                            .unwrap(),
-                    );
+                    edit_message = edit_message.new_attachment(CreateAttachment::bytes(
+                        compile_buf.lock().unwrap().as_bytes(),
+                        "compile_log.txt",
+                    ));
                 }
             }
 
