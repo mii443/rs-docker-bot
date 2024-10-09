@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::language::Language;
 
@@ -6,7 +6,8 @@ use crate::language::Language;
 pub struct Config {
     pub token: String,
     pub prefix: String,
-    pub languages: Vec<Language>
+    pub languages: Vec<Language>,
+    pub owner: u64,
 }
 
 impl Config {
