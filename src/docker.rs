@@ -1,6 +1,4 @@
 use std::{
-    fs::File,
-    io::{Read, Write},
     sync::mpsc::{self, Receiver, Sender},
     time::Duration,
 };
