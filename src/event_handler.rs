@@ -89,7 +89,7 @@ async fn on_message(ctx: &serenity::Context, data: &Data, message: &Message) {
             let timeout = Arc::new(Mutex::new(false));
             let t = Arc::clone(&timeout);
             tokio::spawn(async move {
-                sleep_until(Instant::now() + Duration::from_secs(30)).await;
+                sleep_until(Instant::now() + Duration::from_secs(120)).await;
                 if let Ok(_) = end_tx.send(()) {
                     *t.lock().unwrap() = true;
                 }
@@ -126,6 +126,23 @@ async fn on_message(ctx: &serenity::Context, data: &Data, message: &Message) {
                         compile_buf.lock().unwrap().as_bytes(),
                         "compile_log.txt",
                     ));
+                }
+            }
+
+            let paths: Vec<&str> = if let Some(matc) = captures.name("paths") {
+                matc.as_str()
+            } else {
+                ""
+            }
+            .lines()
+            .filter(|l| !l.is_empty())
+            .collect();
+
+            for path in paths {
+                if let Ok(file) = container.download_file(path).await {
+                    edit_message = edit_message.new_attachment(CreateAttachment::bytes(file, path));
+                } else {
+                    content += &format!("\nFile not found: `{}`", path);
                 }
             }
 
