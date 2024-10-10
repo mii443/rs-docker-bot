@@ -49,7 +49,10 @@ async fn on_message(ctx: &serenity::Context, data: &Data, new_message: &Message)
                 .await
                 .unwrap();
 
-            let container = Container::from_language(language.clone()).await;
+            let container = {
+                let mut pool = data.container_pool.lock().await;
+                pool.get_container(language.clone()).await
+            };
             let file_name = format!("{}.{}", container.name, language.extension.clone());
 
             message
