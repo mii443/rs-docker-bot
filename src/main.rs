@@ -51,9 +51,11 @@ async fn main() -> Result<(), ()> {
         serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::MESSAGE_CONTENT;
 
     let mut pool = ContainerPool::new();
-    for _ in 0..10 {
-        pool.add_container(config.get_language(&"Ruby".to_string()).unwrap())
-            .await;
+    pool.cleanup().await;
+    for _ in 0..3 {
+        for language in &config.languages {
+            pool.add_container(language.clone()).await;
+        }
     }
 
     let framework = poise::Framework::builder()

@@ -1,8 +1,15 @@
 use std::sync::Arc;
 
+use bollard::{
+    container::{RemoveContainerOptions, StopContainerOptions},
+    Docker,
+};
 use tokio::sync::Mutex;
 
-use crate::{docker::Container, language::Language};
+use crate::{
+    docker::{docker_ps, Container},
+    language::Language,
+};
 
 pub struct ContainerPool {
     pub containers: Arc<Mutex<Vec<Container>>>,
@@ -25,6 +32,12 @@ impl ContainerPool {
             }
         }) {
             println!("Using container from pool");
+            let container_pool = self.containers.clone();
+            tokio::spawn(async move {
+                let container = Container::from_language(language).await;
+                container_pool.lock().await.push(container);
+                println!("Added contaienr to pool");
+            });
             let container = pool[i].clone();
             pool.remove(i);
             container
@@ -34,9 +47,42 @@ impl ContainerPool {
     }
 
     pub async fn add_container(&mut self, language: Language) {
-        self.containers
-            .lock()
-            .await
-            .push(Container::from_language(language).await);
+        println!("Adding container to pool... {}", language.image);
+        let container = Container::from_language(language).await;
+        self.containers.lock().await.push(container);
+    }
+
+    pub async fn cleanup(&mut self) {
+        let docker = Docker::connect_with_local_defaults().unwrap();
+
+        let containers = docker_ps().await;
+        println!("{}", containers.len());
+        for container in &containers {
+            if container
+                .names
+                .clone()
+                .unwrap_or_default()
+                .iter()
+                .find(|name| name.starts_with("/dockerbot-"))
+                .is_some()
+            {
+                println!("Stopping {}", container.id.clone().unwrap());
+                let id = container.id.clone().unwrap();
+                docker
+                    .stop_container(&id, Some(StopContainerOptions { t: 5 }))
+                    .await
+                    .unwrap();
+                docker
+                    .remove_container(
+                        &id,
+                        Some(RemoveContainerOptions {
+                            force: true,
+                            ..Default::default()
+                        }),
+                    )
+                    .await
+                    .unwrap();
+            }
+        }
     }
 }

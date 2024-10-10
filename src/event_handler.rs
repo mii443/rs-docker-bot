@@ -44,22 +44,14 @@ async fn on_message(ctx: &serenity::Context, data: &Data, new_message: &Message)
         let language = config.get_language(&String::from(language));
 
         if let Some(language) = language {
-            let mut message = new_message
-                .reply(&ctx.http, format!("Creating {} container.", language.name))
-                .await
-                .unwrap();
-
             let container = {
                 let mut pool = data.container_pool.lock().await;
                 pool.get_container(language.clone()).await
             };
             let file_name = format!("{}.{}", container.name, language.extension.clone());
 
-            message
-                .edit(
-                    &ctx.http,
-                    EditMessage::new().content(format!("Created: {}", container.id)),
-                )
+            let mut message = new_message
+                .reply(&ctx.http, format!("Container created: {}", container.id))
                 .await
                 .unwrap();
 
