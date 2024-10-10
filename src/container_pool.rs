@@ -24,11 +24,19 @@ impl ContainerPool {
                 false
             }
         }) {
+            println!("Using container from pool");
             let container = pool[i].clone();
             pool.remove(i);
             container
         } else {
             Container::from_language(language).await
         }
+    }
+
+    pub async fn add_container(&mut self, language: Language) {
+        self.containers
+            .lock()
+            .await
+            .push(Container::from_language(language).await);
     }
 }

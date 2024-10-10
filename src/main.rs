@@ -50,6 +50,12 @@ async fn main() -> Result<(), ()> {
     let intents =
         serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::MESSAGE_CONTENT;
 
+    let mut pool = ContainerPool::new();
+    for _ in 0..10 {
+        pool.add_container(config.get_language(&"Ruby".to_string()).unwrap())
+            .await;
+    }
+
     let framework = poise::Framework::builder()
         .setup({
             let config = config.clone();
@@ -57,7 +63,7 @@ async fn main() -> Result<(), ()> {
                 Box::pin(async move {
                     Ok(Data {
                         config: Arc::new(Mutex::new(config)),
-                        container_pool: Arc::new(Mutex::new(ContainerPool::new())),
+                        container_pool: Arc::new(Mutex::new(pool)),
                     })
                 })
             }
