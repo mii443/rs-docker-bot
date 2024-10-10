@@ -199,7 +199,47 @@ impl Container {
         Ok(result)
     }
 
-    pub async fn upload_file(&self, content: &str, file_name: String) {
+    pub async fn upload_file(&self, data: Vec<u8>, path: &str) {
+        let docker = Docker::connect_with_local_defaults().unwrap();
+
+        let archive = {
+            let encoder = GzEncoder::new(vec![], Compression::default());
+            let mut tar = tar::Builder::new(encoder);
+
+            let mut header = Header::new_gnu();
+            header.set_path(path).unwrap();
+            header.set_size(data.len() as u64);
+            header.set_cksum();
+
+            tar.append(&header, data.as_slice()).unwrap();
+
+            tar.finish().unwrap();
+
+            let encoder = tar.into_inner().unwrap();
+            encoder.finish().unwrap()
+        };
+
+        {
+            docker
+                .start_container::<String>(&self.id, None)
+                .await
+                .unwrap();
+
+            docker
+                .upload_to_container(
+                    &self.id,
+                    Some(UploadToContainerOptions {
+                        path: "/",
+                        ..Default::default()
+                    }),
+                    archive.into(),
+                )
+                .await
+                .unwrap();
+        }
+    }
+
+    pub async fn upload_source_file(&self, content: &str, file_name: String) {
         let docker = Docker::connect_with_local_defaults().unwrap();
         let path = self.language.clone().unwrap().get_path(file_name.clone());
 

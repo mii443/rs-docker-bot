@@ -22,7 +22,6 @@ pub async fn event_handler(
         }
 
         serenity::FullEvent::Message { new_message } => {
-            println!("on_message");
             on_message(ctx, data, new_message).await;
         }
 
@@ -31,10 +30,10 @@ pub async fn event_handler(
     Ok(())
 }
 
-async fn on_message(ctx: &serenity::Context, data: &Data, message: &Message) {
+async fn on_message(ctx: &serenity::Context, data: &Data, new_message: &Message) {
     let regex = Regex::new("^(?P<codeblock>```(?:(?P<language>[^\n]*)\n)?(?P<code>[\\s\\S]+?)\n```)(?:\\s*(?P<paths>(?:(?:/|\\.\\.?/)?(?:[^/\\s]+/)*[^/\\s]+\\s*)+))?$").unwrap();
 
-    let capture = regex.captures(&message.content);
+    let capture = regex.captures(&new_message.content);
 
     if let Some(captures) = capture {
         let language = captures.name("language").unwrap().as_str();
@@ -45,7 +44,7 @@ async fn on_message(ctx: &serenity::Context, data: &Data, message: &Message) {
         let language = config.get_language(&String::from(language));
 
         if let Some(language) = language {
-            let mut message = message
+            let mut message = new_message
                 .reply(&ctx.http, format!("Creating {} container.", language.name))
                 .await
                 .unwrap();
@@ -61,7 +60,14 @@ async fn on_message(ctx: &serenity::Context, data: &Data, message: &Message) {
                 .await
                 .unwrap();
 
-            container.upload_file(code, file_name.clone()).await;
+            for attachment in &new_message.attachments {
+                let data = attachment.download().await.unwrap();
+                container
+                    .upload_file(data, &format!("{}", attachment.filename))
+                    .await;
+            }
+
+            container.upload_source_file(code, file_name.clone()).await;
 
             let compile_buf = Arc::new(Mutex::new(String::default()));
             let b = Arc::clone(&compile_buf);
