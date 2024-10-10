@@ -1,4 +1,5 @@
 mod config;
+mod container_pool;
 mod docker;
 mod event_handler;
 mod language;
@@ -7,6 +8,7 @@ use std::{collections::HashSet, env, fs::File, io::Read, sync::Arc};
 
 use config::Config;
 
+use container_pool::ContainerPool;
 use event_handler::event_handler;
 use poise::{
     serenity_prelude::{self as serenity, futures::lock::Mutex, UserId},
@@ -19,6 +21,7 @@ type Context<'a> = poise::Context<'a, Data, Error>;
 
 pub struct Data {
     pub config: Arc<Mutex<Config>>,
+    pub container_pool: Arc<Mutex<ContainerPool>>,
 }
 
 fn load_config() -> Option<Config> {
@@ -54,6 +57,7 @@ async fn main() -> Result<(), ()> {
                 Box::pin(async move {
                     Ok(Data {
                         config: Arc::new(Mutex::new(config)),
+                        container_pool: Arc::new(Mutex::new(ContainerPool::new())),
                     })
                 })
             }
