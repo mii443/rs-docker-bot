@@ -34,6 +34,7 @@ pub async fn docker_ps() -> Vec<ContainerSummary> {
     list.unwrap()
 }
 
+#[derive(Clone, Debug)]
 pub struct Container {
     pub id: String,
     pub name: String,

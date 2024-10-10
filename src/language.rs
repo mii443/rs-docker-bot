@@ -1,7 +1,7 @@
 use bollard::{container::Config, service::HostConfig};
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Language {
     pub name: String,
     pub code: Vec<String>,
