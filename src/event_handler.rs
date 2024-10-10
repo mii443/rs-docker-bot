@@ -89,7 +89,7 @@ async fn on_message(ctx: &serenity::Context, data: &Data, message: &Message) {
             let timeout = Arc::new(Mutex::new(false));
             let t = Arc::clone(&timeout);
             tokio::spawn(async move {
-                sleep_until(Instant::now() + Duration::from_secs(10)).await;
+                sleep_until(Instant::now() + Duration::from_secs(30)).await;
                 if let Ok(_) = end_tx.send(()) {
                     *t.lock().unwrap() = true;
                 }

@@ -1,10 +1,10 @@
-use core::slice::SlicePattern;
 use std::{
     io::Read,
     sync::mpsc::{self, Receiver, Sender},
     time::Duration,
 };
 
+use anyhow::{Context, Result};
 use bollard::{
     container::{
         CreateContainerOptions, DownloadFromContainerOptions, ListContainersOptions, LogOutput,
@@ -16,7 +16,7 @@ use bollard::{
 };
 use flate2::{write::GzEncoder, Compression};
 use futures_util::StreamExt;
-use tar::Header;
+use tar::{Archive, Header};
 use tokio::task::JoinHandle;
 
 use crate::language::Language;
@@ -174,7 +174,7 @@ impl Container {
         return None;
     }
 
-    pub async fn download_file(&self, path: &str) -> Vec<u8> {
+    pub async fn download_file(&self, path: &str) -> Result<Vec<u8>> {
         let docker = Docker::connect_with_local_defaults().unwrap();
         let options = Some(DownloadFromContainerOptions { path });
         let mut download = docker.download_from_container(&self.id, options);
@@ -183,7 +183,20 @@ impl Container {
             result.append(&mut d.into());
         }
 
-        result
+        Self::extract(result)
+    }
+
+    fn extract(data: Vec<u8>) -> Result<Vec<u8>> {
+        let mut archive = Archive::new(data.as_slice());
+        let mut entry = archive
+            .entries()?
+            .next()
+            .context("File not found")?
+            .context("File not found.")?;
+        let mut result = vec![];
+        entry.read_to_end(&mut result)?;
+
+        Ok(result)
     }
 
     pub async fn upload_file(&self, content: &str, file_name: String) {
